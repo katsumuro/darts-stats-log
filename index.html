@@ -75,44 +75,71 @@
 
         <!-- Main Content -->
         <main class="main">
-            <!-- Home Page -->
+            <!-- Home Page (Dashboard) -->
             <section id="page-home" class="page active">
-                <div class="page-header">
-                    <div class="date-display">
-                        <span class="date-label">TODAY</span>
-                        <span class="date-value" id="today-date"></span>
+                <!-- Main Rating Display -->
+                <div class="dashboard-header">
+                    <div class="main-rating-container">
+                        <div class="rating-ring">
+                            <svg viewBox="0 0 120 120" class="rating-gauge">
+                                <circle cx="60" cy="60" r="54" class="gauge-bg" />
+                                <circle cx="60" cy="60" r="54" class="gauge-fill" id="rating-gauge-fill" />
+                            </svg>
+                            <div class="rating-center">
+                                <span class="main-rating" id="main-rating">--</span>
+                            </div>
+                        </div>
+                        <div class="rating-rank" id="rating-rank">--</div>
                     </div>
                 </div>
 
-                <div class="home-content">
-                    <!-- Today's Session Card -->
-                    <div id="today-session-card" class="card session-card">
-                        <div class="card-header">
-                            <h2>今日のセッション</h2>
-                            <span class="session-status" id="session-status">未記録</span>
-                        </div>
-                        <div id="today-session-content" class="card-body">
-                            <button id="btn-create-session" class="btn btn-primary btn-large">
-                                <span class="btn-icon">➕</span>
-                                今日の記録を作成
-                            </button>
-                        </div>
+                <!-- Game Stats Row -->
+                <div class="game-stats-row">
+                    <div class="game-stat-item" data-game="01">
+                        <span class="game-stat-label">01 GAMES</span>
+                        <span class="game-stat-value" id="stat-01">--</span>
                     </div>
+                    <div class="game-stat-item" data-game="cricket">
+                        <span class="game-stat-label">CRICKET</span>
+                        <span class="game-stat-value" id="stat-cricket">--</span>
+                    </div>
+                    <div class="game-stat-item" data-game="countup">
+                        <span class="game-stat-label">COUNT-UP</span>
+                        <span class="game-stat-value" id="stat-countup">--</span>
+                    </div>
+                </div>
 
-                    <!-- Quick Stats -->
-                    <div class="stats-grid" id="home-stats">
-                        <div class="stat-card">
-                            <span class="stat-label">総セッション</span>
-                            <span class="stat-value" id="stat-total-sessions">0</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-label">今月</span>
-                            <span class="stat-value" id="stat-month-sessions">0</span>
-                        </div>
-                        <div class="stat-card">
-                            <span class="stat-label">連続日数</span>
-                            <span class="stat-value" id="stat-streak">0</span>
-                        </div>
+                <!-- Rating Chart -->
+                <div class="dashboard-chart">
+                    <div class="chart-header">
+                        <span class="chart-title">RATING / 30 days</span>
+                    </div>
+                    <div class="chart-container-small">
+                        <canvas id="dashboard-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Today's Record Button -->
+                <div class="today-action">
+                    <button id="btn-create-session" class="btn btn-primary btn-large btn-block">
+                        <span class="btn-icon">➕</span>
+                        <span id="today-btn-text">今日の記録を作成</span>
+                    </button>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid-small">
+                    <div class="stat-card-small">
+                        <span class="stat-label-small">総セッション</span>
+                        <span class="stat-value-small" id="stat-total-sessions">0</span>
+                    </div>
+                    <div class="stat-card-small">
+                        <span class="stat-label-small">今月</span>
+                        <span class="stat-value-small" id="stat-month-sessions">0</span>
+                    </div>
+                    <div class="stat-card-small">
+                        <span class="stat-label-small">連続</span>
+                        <span class="stat-value-small" id="stat-streak">0</span>
                     </div>
                 </div>
             </section>
@@ -334,17 +361,17 @@
                 <div class="modal-body">
                     <!-- Game Type Selection -->
                     <div class="game-type-grid" id="game-type-grid">
-                        <button class="game-type-btn" data-type="COUNTUP">
-                            <span class="game-icon">🎯</span>
-                            <span class="game-name">COUNT UP</span>
-                        </button>
                         <button class="game-type-btn" data-type="01">
-                            <span class="game-icon">5️⃣0️⃣1️⃣</span>
-                            <span class="game-name">01</span>
+                            <span class="game-icon">🎯</span>
+                            <span class="game-name">01 GAMES</span>
                         </button>
                         <button class="game-type-btn" data-type="CRICKET">
                             <span class="game-icon">🦋</span>
                             <span class="game-name">CRICKET</span>
+                        </button>
+                        <button class="game-type-btn" data-type="COUNTUP">
+                            <span class="game-icon">💯</span>
+                            <span class="game-name">COUNT-UP</span>
                         </button>
                         <button class="game-type-btn" data-type="OTHER">
                             <span class="game-icon">📝</span>

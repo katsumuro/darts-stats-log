@@ -354,40 +354,88 @@ function clearAllData() {
 // ============================================
 
 const GAME_PRESETS = {
-    COUNTUP: {
-        name: 'COUNT UP',
-        icon: '🎯',
-        items: [
-            { key: 'Score', value_type: 'NUMBER', unit: '' },
-            { key: 'Bulls', value_type: 'NUMBER', unit: '' },
-            { key: 'Hat Tricks', value_type: 'NUMBER', unit: '' }
-        ]
-    },
     '01': {
-        name: '01',
-        icon: '5️⃣0️⃣1️⃣',
+        name: '01 GAMES',
+        icon: '🎯',
+        color: '#ffaa00',
         items: [
-            { key: 'Rating', value_type: 'NUMBER', unit: '' },
-            { key: 'PPD', value_type: 'NUMBER', unit: '' },
-            { key: 'Avg', value_type: 'NUMBER', unit: '' },
-            { key: '80%', value_type: 'NUMBER', unit: '%' },
-            { key: 'Check Out', value_type: 'NUMBER', unit: '%' }
+            { key: 'Rating_avg', label: 'Rating (平均)', value_type: 'NUMBER', unit: '' },
+            { key: 'Rating_max', label: 'Rating (最高)', value_type: 'NUMBER', unit: '' }
         ]
     },
     CRICKET: {
         name: 'CRICKET',
         icon: '🦋',
+        color: '#00ffaa',
         items: [
-            { key: 'Rating', value_type: 'NUMBER', unit: '' },
-            { key: 'MPR', value_type: 'NUMBER', unit: '' },
-            { key: 'Max', value_type: 'NUMBER', unit: '' }
+            { key: 'MPR_avg', label: 'MPR (平均)', value_type: 'NUMBER', unit: '' },
+            { key: 'MPR_max', label: 'MPR (最高)', value_type: 'NUMBER', unit: '' }
+        ]
+    },
+    COUNTUP: {
+        name: 'COUNT-UP',
+        icon: '💯',
+        color: '#ff6688',
+        items: [
+            { key: 'Score_avg', label: 'Score (平均)', value_type: 'NUMBER', unit: '' },
+            { key: 'Score_max', label: 'Score (最高)', value_type: 'NUMBER', unit: '' }
         ]
     },
     OTHER: {
         name: 'OTHER',
         icon: '📝',
+        color: '#888888',
         items: [
-            { key: 'Note', value_type: 'TEXT', unit: '' }
+            { key: 'Note', label: 'メモ', value_type: 'TEXT', unit: '' }
         ]
     }
 };
+
+// ============================================
+// DARTSLIVE Rating Calculation
+// ============================================
+
+/**
+ * Calculate 01 Rating from PPD (Points Per Dart)
+ * Based on DARTSLIVE rating formula approximation
+ */
+function calculate01Rating(ppd) {
+    if (!ppd || ppd <= 0) return null;
+    // Approximate formula: Rating = PPD / 3 - some offset
+    // DARTSLIVE uses: Rating ≈ (PPD - 15) / 5 + 1 approximately
+    // More accurate: Rating = (PPD / 20) * 4 + base
+    return Math.round((ppd / 20) * 4 * 100) / 100;
+}
+
+/**
+ * Calculate Cricket Rating from MPR (Marks Per Round)
+ */
+function calculateCricketRating(mpr) {
+    if (!mpr || mpr <= 0) return null;
+    // DARTSLIVE Cricket Rating approximation
+    // Rating ≈ MPR * 2.5 + offset
+    return Math.round(mpr * 2.5 * 100) / 100;
+}
+
+/**
+ * Estimate overall rating (like DARTSLIVE's main rating)
+ */
+function calculateOverallRating(rating01, cricketRating) {
+    if (rating01 && cricketRating) {
+        return Math.round(((rating01 + cricketRating) / 2) * 100) / 100;
+    }
+    return rating01 || cricketRating || null;
+}
+
+/**
+ * Get stats class based on rating value
+ */
+function getRatingClass(rating) {
+    if (!rating) return '';
+    if (rating >= 10) return 'rating-sa';
+    if (rating >= 8) return 'rating-a';
+    if (rating >= 6) return 'rating-b';
+    if (rating >= 4) return 'rating-c';
+    return 'rating-d';
+}
+

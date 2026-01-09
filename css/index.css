@@ -10,38 +10,38 @@
     --bg-tertiary: #1a1a1a;
     --bg-card: #1e1e1e;
     --bg-hover: #252525;
-    
+
     /* Text */
     --text-primary: #ffffff;
     --text-secondary: #a0a0a0;
     --text-muted: #666666;
-    
+
     /* Accent - Neon Cyan (default) */
     --accent: #00ffff;
     --accent-dim: rgba(0, 255, 255, 0.15);
     --accent-glow: 0 0 20px rgba(0, 255, 255, 0.4);
-    
+
     /* Status */
     --success: #00ff88;
     --warning: #ffaa00;
     --danger: #ff4466;
-    
+
     /* Borders */
     --border-color: #2a2a2a;
     --border-radius: 8px;
     --border-radius-lg: 12px;
-    
+
     /* Spacing */
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
-    
+
     /* Typography */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-display: 'Orbitron', monospace;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
@@ -73,7 +73,9 @@
 }
 
 /* Reset & Base */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -196,8 +198,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .page-header {
@@ -269,7 +278,8 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-.card-header h2, .card-header h3 {
+.card-header h2,
+.card-header h3 {
     font-size: 1rem;
     font-weight: 600;
 }
@@ -422,7 +432,9 @@ body {
     margin-bottom: var(--spacing-xs);
 }
 
-.form-input, .form-textarea, .form-select {
+.form-input,
+.form-textarea,
+.form-select {
     width: 100%;
     padding: var(--spacing-sm) var(--spacing-md);
     font-family: var(--font-primary);
@@ -434,12 +446,15 @@ body {
     transition: border-color var(--transition-fast);
 }
 
-.form-input:focus, .form-textarea:focus, .form-select:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
     outline: none;
     border-color: var(--accent);
 }
 
-.form-input::placeholder, .form-textarea::placeholder {
+.form-input::placeholder,
+.form-textarea::placeholder {
     color: var(--text-muted);
 }
 
@@ -689,9 +704,20 @@ body {
     color: var(--text-secondary);
 }
 
-.badge.countup { background: #1a3a3a; color: #00ffaa; }
-.badge.game-01 { background: #3a2a1a; color: #ffaa00; }
-.badge.cricket { background: #2a1a3a; color: #aa88ff; }
+.badge.countup {
+    background: #1a3a3a;
+    color: #00ffaa;
+}
+
+.badge.game-01 {
+    background: #3a2a1a;
+    color: #ffaa00;
+}
+
+.badge.cricket {
+    background: #2a1a3a;
+    color: #aa88ff;
+}
 
 /* Calendar */
 .calendar-header {
@@ -924,6 +950,7 @@ body {
         opacity: 0;
         transform: scale(0.95) translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -998,6 +1025,230 @@ body {
    Empty State
    ============================================ */
 
+/* ============================================
+   Dashboard (DARTSLIVE Style)
+   ============================================ */
+
+.dashboard-header {
+    display: flex;
+    justify-content: center;
+    padding: var(--spacing-lg) 0;
+}
+
+.main-rating-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rating-ring {
+    position: relative;
+    width: 180px;
+    height: 180px;
+}
+
+.rating-gauge {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: var(--bg-tertiary);
+    stroke-width: 8;
+}
+
+.gauge-fill {
+    fill: none;
+    stroke: url(#rating-gradient);
+    stroke: var(--accent);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 339.292;
+    stroke-dashoffset: 339.292;
+    transition: stroke-dashoffset 1s ease;
+    filter: drop-shadow(0 0 10px var(--accent));
+}
+
+.rating-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.main-rating {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    line-height: 1;
+}
+
+.rating-rank {
+    margin-top: var(--spacing-sm);
+    padding: 4px 16px;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    color: var(--accent);
+    text-shadow: var(--accent-glow);
+}
+
+/* Game Stats Row */
+.game-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.game-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.game-stat-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.game-stat-value {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.game-stat-item[data-game="01"] .game-stat-value {
+    color: #ffaa00;
+}
+
+.game-stat-item[data-game="cricket"] .game-stat-value {
+    color: #00ffaa;
+}
+
+.game-stat-item[data-game="countup"] .game-stat-value {
+    color: #ff6688;
+}
+
+/* Dashboard Chart */
+.dashboard-chart {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.chart-header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.chart-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.chart-container-small {
+    height: 150px;
+}
+
+/* Today Action */
+.today-action {
+    margin-bottom: var(--spacing-md);
+}
+
+/* Small Stats Grid */
+.stats-grid-small {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.stat-card-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-label-small {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.stat-value-small {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* Calendar with Ratings */
+.calendar-day {
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    min-height: 60px;
+}
+
+.calendar-day-number {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.calendar-day-rating {
+    font-family: var(--font-display);
+    font-size: 0.625rem;
+    color: var(--accent);
+}
+
+.calendar-day-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 0.5rem;
+    color: var(--text-muted);
+}
+
+.calendar-stat-01 {
+    color: #ffaa00;
+}
+
+.calendar-stat-cricket {
+    color: #00ffaa;
+}
+
+.calendar-stat-countup {
+    color: #ff6688;
+}
+
+/* Empty State */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -1028,29 +1279,51 @@ body {
         gap: var(--spacing-md);
         padding: var(--spacing-md);
     }
-    
+
     .nav {
         width: 100%;
         justify-content: space-around;
     }
-    
+
     .nav-label {
         display: none;
     }
-    
-    .stats-grid, .summary-stats {
+
+    .stats-grid,
+    .summary-stats {
         grid-template-columns: 1fr;
     }
-    
+
+    .game-stats-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .game-stat-value {
+        font-size: 1.25rem;
+    }
+
+    .rating-ring {
+        width: 140px;
+        height: 140px;
+    }
+
+    .main-rating {
+        font-size: 2.5rem;
+    }
+
     .period-selector {
         flex-wrap: wrap;
     }
-    
+
     .period-btn {
         flex: 1 1 calc(50% - 4px);
     }
-    
+
     .game-type-grid {
         grid-template-columns: 1fr;
+    }
+
+    .calendar-day {
+        min-height: 50px;
     }
 }

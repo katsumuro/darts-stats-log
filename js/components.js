@@ -20,14 +20,18 @@ function renderStatBlock(statblock, index, editable = true) {
                 ? (item.value_text || '')
                 : '';
 
+        // Use label if available, otherwise use key
+        const displayLabel = item.label || item.key;
+
         if (editable) {
             itemsHtml += `
                 <div class="stat-row" data-key="${item.key}">
-                    <span class="stat-key">${item.key}</span>
+                    <span class="stat-key">${displayLabel}</span>
                     <input type="${item.value_type === 'NUMBER' ? 'number' : 'text'}" 
                            class="form-input stat-value-input" 
                            value="${value}"
                            step="any"
+                           placeholder="${item.value_type === 'NUMBER' ? '0.00' : ''}"
                            data-statblock="${index}"
                            data-key="${item.key}"
                            data-type="${item.value_type}">
@@ -37,7 +41,7 @@ function renderStatBlock(statblock, index, editable = true) {
         } else {
             itemsHtml += `
                 <div class="stat-row">
-                    <span class="stat-key">${item.key}</span>
+                    <span class="stat-key">${displayLabel}</span>
                     <span class="stat-value-display">${value || '--'}</span>
                     <span class="stat-unit">${item.unit || ''}</span>
                 </div>
@@ -143,9 +147,14 @@ function renderEmptyState(icon, message) {
 }
 
 /**
- * Render calendar
+ * Render calendar with optional rating data
+ * @param {number} year
+ * @param {number} month
+ * @param {Set} sessionDates - Dates that have sessions
+ * @param {string} todayDate - Today's date string
+ * @param {Object} dateRatings - Optional map of date to ratings { date: { rating01, mpr, countup } }
  */
-function renderCalendar(year, month, sessionDates, todayDate) {
+function renderCalendar(year, month, sessionDates, todayDate, dateRatings = {}) {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDay = firstDay.getDay();
@@ -164,11 +173,28 @@ function renderCalendar(year, month, sessionDates, todayDate) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const hasSession = sessionDates.has(dateStr);
         const isToday = dateStr === todayDate;
+        const ratings = dateRatings[dateStr] || {};
+
+        let ratingHtml = '';
+        if (hasSession && (ratings.rating01 || ratings.mpr || ratings.countup)) {
+            ratingHtml = '<div class="calendar-day-stats">';
+            if (ratings.rating01) {
+                ratingHtml += `<span class="calendar-stat-01">${ratings.rating01.toFixed(1)}</span>`;
+            }
+            if (ratings.mpr) {
+                ratingHtml += `<span class="calendar-stat-cricket">${ratings.mpr.toFixed(2)}</span>`;
+            }
+            if (ratings.countup) {
+                ratingHtml += `<span class="calendar-stat-countup">${ratings.countup}</span>`;
+            }
+            ratingHtml += '</div>';
+        }
 
         html += `
             <div class="calendar-day ${hasSession ? 'has-session' : ''} ${isToday ? 'today' : ''}" 
                  data-date="${dateStr}">
-                ${day}
+                <span class="calendar-day-number">${day}</span>
+                ${ratingHtml}
             </div>
         `;
     }

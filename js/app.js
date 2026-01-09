@@ -28,11 +28,16 @@ const elements = {
     pages: document.querySelectorAll('.page'),
     navBtns: document.querySelectorAll('.nav-btn'),
 
-    // Home
-    todayDate: document.getElementById('today-date'),
-    sessionStatus: document.getElementById('session-status'),
-    todaySessionContent: document.getElementById('today-session-content'),
+    // Dashboard (Home)
+    mainRating: document.getElementById('main-rating'),
+    ratingRank: document.getElementById('rating-rank'),
+    ratingGaugeFill: document.getElementById('rating-gauge-fill'),
+    stat01: document.getElementById('stat-01'),
+    statCricket: document.getElementById('stat-cricket'),
+    statCountup: document.getElementById('stat-countup'),
+    dashboardChart: document.getElementById('dashboard-chart'),
     btnCreateSession: document.getElementById('btn-create-session'),
+    todayBtnText: document.getElementById('today-btn-text'),
     statTotalSessions: document.getElementById('stat-total-sessions'),
     statMonthSessions: document.getElementById('stat-month-sessions'),
     statStreak: document.getElementById('stat-streak'),
@@ -280,50 +285,95 @@ async function navigateTo(page) {
 }
 
 // ============================================
-// Home Page
+// Home Page (Dashboard)
 // ============================================
 
-function updateTodayDate() {
-    const today = new Date();
-    elements.todayDate.textContent = formatDate(today.toISOString().split('T')[0]);
-}
+let dashboardChartInstance = null;
 
 async function loadHomePage() {
     const today = getTodayDate();
     const todaySession = await getSessionByDate(today);
     const allSessions = await getAllSessions();
 
-    // Update today's session card
+    // Update today's button
     if (todaySession) {
         state.currentSession = todaySession;
-        elements.sessionStatus.textContent = '記録済み';
-        elements.sessionStatus.classList.add('recorded');
-
-        const statblocks = await getStatBlocksBySession(todaySession.session_id);
-
-        elements.todaySessionContent.innerHTML = `
-            <div class="session-summary">
-                <p>${todaySession.location || '場所未設定'}</p>
-                <p class="muted">${statblocks.length}ゲーム記録</p>
-                <button class="btn btn-secondary" onclick="editSession('${todaySession.session_id}')">
-                    ✏️ 編集する
-                </button>
-            </div>
-        `;
+        elements.todayBtnText.textContent = '今日の記録を編集';
+        elements.btnCreateSession.onclick = () => editSession(todaySession.session_id);
     } else {
         state.currentSession = null;
-        elements.sessionStatus.textContent = '未記録';
-        elements.sessionStatus.classList.remove('recorded');
-
-        elements.todaySessionContent.innerHTML = `
-            <button id="btn-create-session" class="btn btn-primary btn-large" onclick="createTodaySession()">
-                <span class="btn-icon">➕</span>
-                今日の記録を作成
-            </button>
-        `;
+        elements.todayBtnText.textContent = '今日の記録を作成';
+        elements.btnCreateSession.onclick = createTodaySession;
     }
 
-    // Update stats
+    // Calculate overall stats from recent sessions
+    const recentSessions = filterSessionsByPeriod(allSessions, 30);
+    let rating01Avg = null;
+    let cricketMPRAvg = null;
+    let countupScoreAvg = null;
+
+    let rating01Values = [];
+    let cricketMPRValues = [];
+    let countupScoreValues = [];
+    let ratingHistory = [];
+
+    for (const session of recentSessions) {
+        const statblocks = await getStatBlocksBySession(session.session_id);
+
+        for (const block of statblocks) {
+            if (block.game_type === '01') {
+                const avgVal = getStatValue(block.items, 'Rating_avg');
+                if (avgVal) rating01Values.push(avgVal);
+            } else if (block.game_type === 'CRICKET') {
+                const avgVal = getStatValue(block.items, 'MPR_avg');
+                if (avgVal) cricketMPRValues.push(avgVal);
+            } else if (block.game_type === 'COUNTUP') {
+                const avgVal = getStatValue(block.items, 'Score_avg');
+                if (avgVal) countupScoreValues.push(avgVal);
+            }
+        }
+
+        // Collect rating history for chart
+        const sessionRating01 = rating01Values.length > 0 ? rating01Values[rating01Values.length - 1] : null;
+        if (sessionRating01) {
+            ratingHistory.push({
+                date: session.date,
+                value: sessionRating01
+            });
+        }
+    }
+
+    // Calculate averages
+    if (rating01Values.length > 0) {
+        rating01Avg = rating01Values.reduce((a, b) => a + b, 0) / rating01Values.length;
+    }
+    if (cricketMPRValues.length > 0) {
+        cricketMPRAvg = cricketMPRValues.reduce((a, b) => a + b, 0) / cricketMPRValues.length;
+    }
+    if (countupScoreValues.length > 0) {
+        countupScoreAvg = countupScoreValues.reduce((a, b) => a + b, 0) / countupScoreValues.length;
+    }
+
+    // Calculate main rating (average of 01 rating)
+    const mainRating = rating01Avg;
+
+    // Update dashboard display
+    if (mainRating) {
+        elements.mainRating.textContent = mainRating.toFixed(2);
+        updateRatingGauge(mainRating);
+        elements.ratingRank.textContent = getRankFromRating(mainRating);
+    } else {
+        elements.mainRating.textContent = '--';
+        elements.ratingRank.textContent = '--';
+        updateRatingGauge(0);
+    }
+
+    // Update game stats
+    elements.stat01.textContent = rating01Avg ? rating01Avg.toFixed(2) : '--';
+    elements.statCricket.textContent = cricketMPRAvg ? cricketMPRAvg.toFixed(2) : '--';
+    elements.statCountup.textContent = countupScoreAvg ? countupScoreAvg.toFixed(0) : '--';
+
+    // Update quick stats
     elements.statTotalSessions.textContent = allSessions.length;
 
     const thisMonth = new Date().toISOString().slice(0, 7);
@@ -331,6 +381,91 @@ async function loadHomePage() {
     elements.statMonthSessions.textContent = monthSessions.length;
 
     elements.statStreak.textContent = calculateStreak(allSessions);
+
+    // Render dashboard chart
+    renderDashboardChart(ratingHistory.reverse());
+}
+
+function updateRatingGauge(rating) {
+    const maxRating = 15; // Max rating for gauge
+    const percentage = Math.min(rating / maxRating, 1);
+    const circumference = 2 * Math.PI * 54; // r=54
+    const offset = circumference * (1 - percentage);
+
+    if (elements.ratingGaugeFill) {
+        elements.ratingGaugeFill.style.strokeDashoffset = offset;
+    }
+}
+
+function getRankFromRating(rating) {
+    if (rating >= 15) return 'SA';
+    if (rating >= 13) return 'AAA';
+    if (rating >= 11) return 'AA';
+    if (rating >= 9) return 'A';
+    if (rating >= 7) return 'BB';
+    if (rating >= 5) return 'B';
+    if (rating >= 3) return 'C';
+    return 'CC';
+}
+
+function renderDashboardChart(dataPoints) {
+    if (!elements.dashboardChart) return;
+
+    const ctx = elements.dashboardChart.getContext('2d');
+
+    if (dashboardChartInstance) {
+        dashboardChartInstance.destroy();
+    }
+
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00ffff';
+
+    dashboardChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dataPoints.map(d => formatDateShort(d.date)),
+            datasets: [{
+                data: dataPoints.map(d => d.value),
+                borderColor: accent,
+                backgroundColor: accent + '20',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: accent,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        color: '#1a1a1a'
+                    },
+                    ticks: {
+                        color: '#666',
+                        font: { size: 9 }
+                    }
+                },
+                y: {
+                    display: true,
+                    grid: {
+                        color: '#1a1a1a'
+                    },
+                    ticks: {
+                        color: '#666',
+                        font: { size: 9 }
+                    }
+                }
+            }
+        }
+    });
 }
 
 async function createTodaySession() {
@@ -414,6 +549,7 @@ function addStatBlock(gameType) {
         game_type: gameType,
         items: preset.items.map(item => ({
             key: item.key,
+            label: item.label || item.key,
             value_type: item.value_type,
             value_number: null,
             value_text: null,
@@ -545,6 +681,30 @@ async function renderCalendarView() {
     const sessionDates = new Set(sessions.map(s => s.date));
     const todayDate = getTodayDate();
 
+    // Collect ratings for each date
+    const dateRatings = {};
+    for (const session of sessions) {
+        const statblocks = await getStatBlocksBySession(session.session_id);
+        const ratings = {};
+
+        for (const block of statblocks) {
+            if (block.game_type === '01') {
+                const avgVal = getStatValue(block.items, 'Rating_avg');
+                if (avgVal) ratings.rating01 = avgVal;
+            } else if (block.game_type === 'CRICKET') {
+                const avgVal = getStatValue(block.items, 'MPR_avg');
+                if (avgVal) ratings.mpr = avgVal;
+            } else if (block.game_type === 'COUNTUP') {
+                const avgVal = getStatValue(block.items, 'Score_avg');
+                if (avgVal) ratings.countup = Math.round(avgVal);
+            }
+        }
+
+        if (Object.keys(ratings).length > 0) {
+            dateRatings[session.date] = ratings;
+        }
+    }
+
     const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
     elements.calendarMonth.textContent = `${state.calendarYear}年 ${monthNames[state.calendarMonth]}`;
 
@@ -552,7 +712,8 @@ async function renderCalendarView() {
         state.calendarYear,
         state.calendarMonth,
         sessionDates,
-        todayDate
+        todayDate,
+        dateRatings
     );
 }
 
@@ -603,17 +764,17 @@ async function updateAnalytics() {
             switch (state.selectedMetric) {
                 case 'countup':
                     if (block.game_type === 'COUNTUP') {
-                        value = getStatValue(block.items, 'Score');
+                        value = getStatValue(block.items, 'Score_avg');
                     }
                     break;
                 case 'rating':
                     if (block.game_type === '01') {
-                        value = getStatValue(block.items, 'Rating');
+                        value = getStatValue(block.items, 'Rating_avg');
                     }
                     break;
                 case 'mpr':
                     if (block.game_type === 'CRICKET') {
-                        value = getStatValue(block.items, 'MPR');
+                        value = getStatValue(block.items, 'MPR_avg');
                     }
                     break;
             }
