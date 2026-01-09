@@ -1,5 +1,5 @@
 // Service Worker for Darts Stats Log PWA
-const CACHE_NAME = 'darts-stats-v2';
+const CACHE_NAME = 'darts-stats-v3';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
