@@ -342,14 +342,19 @@ async function loadHomePage() {
     let rating01Values = [];
     let cricketMPRValues = [];
     let countupScoreValues = [];
+    let ratingHistory = [];
 
     for (const session of recentSessions) {
         const statblocks = await getStatBlocksBySession(session.session_id);
+        let sessionRating = null;
 
         for (const block of statblocks) {
             if (block.game_type === '01') {
                 const avgVal = getStatValue(block.items, 'Rating_avg');
-                if (avgVal) rating01Values.push(avgVal);
+                if (avgVal) {
+                    rating01Values.push(avgVal);
+                    sessionRating = avgVal;
+                }
             } else if (block.game_type === 'CRICKET') {
                 const avgVal = getStatValue(block.items, 'MPR_avg');
                 if (avgVal) cricketMPRValues.push(avgVal);
@@ -357,6 +362,14 @@ async function loadHomePage() {
                 const avgVal = getStatValue(block.items, 'Score_avg');
                 if (avgVal) countupScoreValues.push(avgVal);
             }
+        }
+
+        // Collect rating history for dashboard chart
+        if (sessionRating) {
+            ratingHistory.push({
+                date: session.date,
+                value: sessionRating
+            });
         }
     }
 
@@ -384,8 +397,8 @@ async function loadHomePage() {
 
     elements.statStreak.textContent = calculateStreak(allSessions);
 
-    // Render dashboard chart (placeholder for now)
-    renderDashboardChart([]);
+    // Render dashboard chart with rating history
+    renderDashboardChart(ratingHistory.reverse());
 }
 
 function updateRatingGauge(rating) {
@@ -926,6 +939,7 @@ function renderChart(dataPoints) {
                     }
                 },
                 y: {
+                    beginAtZero: false,
                     grid: {
                         color: '#2a2a2a'
                     },
