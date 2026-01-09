@@ -384,17 +384,25 @@ async function loadHomePage() {
 
     elements.statStreak.textContent = calculateStreak(allSessions);
 
-    // Render dashboard chart
-    renderDashboardChart(ratingHistory.reverse());
+    // Render dashboard chart (placeholder for now)
+    renderDashboardChart([]);
 }
 
 function updateRatingGauge(rating) {
-    const maxRating = 15; // Max rating for gauge
+    const maxRating = 18; // Max rating (SA level)
     const percentage = Math.min(rating / maxRating, 1);
-    const circumference = 2 * Math.PI * 54; // r=54
-    const offset = circumference * (1 - percentage);
+
+    // Circumference of circle with r=54
+    const fullCircumference = 2 * Math.PI * 54; // ≈ 339.29
+
+    // We only use 300 degrees (5/6 of circle) from 7 o'clock to 5 o'clock
+    const arcLength = fullCircumference * (300 / 360); // ≈ 282.74
+
+    // Calculate offset: start from full arc and reduce by percentage
+    const offset = arcLength * (1 - percentage);
 
     if (elements.ratingGaugeFill) {
+        elements.ratingGaugeFill.style.strokeDasharray = `${arcLength} ${fullCircumference}`;
         elements.ratingGaugeFill.style.strokeDashoffset = offset;
     }
 }
@@ -478,7 +486,29 @@ async function createTodaySession() {
         state.editingStatBlocks = [];
         state.editingTags = [];
 
-
+        // Automatically add 3 default games
+        const defaultGames = ['01', 'CRICKET', 'COUNTUP'];
+        for (const gameType of defaultGames) {
+            const preset = GAME_PRESETS[gameType];
+            const statblock = {
+                statblock_id: generateUUID(),
+                session_id: session.session_id,
+                type: 'PRESET',
+                game_type: gameType,
+                items: preset.items.map(item => ({
+                    key: item.key,
+                    label: item.label || item.key,
+                    value_type: item.value_type,
+                    value_number: null,
+                    value_text: null,
+                    value_bool: null,
+                    unit: item.unit,
+                    note: null
+                })),
+                attachments: []
+            };
+            state.editingStatBlocks.push(statblock);
+        }
 
         showToast('セッションを作成しました', 'success');
         openEditor(session);
@@ -498,13 +528,12 @@ async function openEditor(session) {
 
     // Load statblocks
     const statblocks = await getStatBlocksBySession(session.session_id);
-    state.editingStatBlocks = statblocks;
+    state.editingStatBlocks = [...statblocks];
 
-    // Ensure default games exist
+    // Ensure 3 default games exist (01, CRICKET, COUNTUP)
     const defaultGames = ['01', 'CRICKET', 'COUNTUP'];
-    let added = false;
     for (const gameType of defaultGames) {
-        const exists = state.editingStatBlocks.some(block => block.game_type === gameType);
+        const exists = state.editingStatBlocks.some(b => b.game_type === gameType);
         if (!exists) {
             const preset = GAME_PRESETS[gameType];
             const statblock = {
@@ -525,17 +554,14 @@ async function openEditor(session) {
                 attachments: []
             };
             state.editingStatBlocks.push(statblock);
-            added = true;
         }
     }
 
-    // Sort logic to ensure 01, CRICKET, COUNTUP come first if needed, 
-    // but simply pushing them might put them at the end if others exist.
-    // Let's sort to ensure order: 01, CRICKET, COUNTUP, others
+    // Sort to ensure consistent order: 01, CRICKET, COUNTUP, then others
+    const gameOrder = { '01': 0, 'CRICKET': 1, 'COUNTUP': 2 };
     state.editingStatBlocks.sort((a, b) => {
-        const order = { '01': 1, 'CRICKET': 2, 'COUNTUP': 3 };
-        const orderA = order[a.game_type] || 99;
-        const orderB = order[b.game_type] || 99;
+        const orderA = gameOrder[a.game_type] ?? 99;
+        const orderB = gameOrder[b.game_type] ?? 99;
         return orderA - orderB;
     });
 
@@ -900,14 +926,11 @@ function renderChart(dataPoints) {
                     }
                 },
                 y: {
-                    min: 0,
-                    max: 18,
                     grid: {
                         color: '#2a2a2a'
                     },
                     ticks: {
-                        color: '#a0a0a0',
-                        stepSize: 2
+                        color: '#a0a0a0'
                     }
                 }
             }
