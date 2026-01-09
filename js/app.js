@@ -389,12 +389,16 @@ async function loadHomePage() {
 }
 
 function updateRatingGauge(rating) {
-    const maxRating = 15; // Max rating for gauge
+    const maxRating = 18; // Max rating for gauge (SA level)
     const percentage = Math.min(rating / maxRating, 1);
-    const circumference = 2 * Math.PI * 54; // r=54
-    const offset = circumference * (1 - percentage);
+
+    // SVG circle with r=54 has circumference = 2 * PI * 54 ≈ 339.29
+    // We use 300 degrees of the circle (5/6), so arc length = 339.29 * 5/6 ≈ 282.74
+    const arcLength = 282.74;
+    const offset = arcLength * (1 - percentage);
 
     if (elements.ratingGaugeFill) {
+        elements.ratingGaugeFill.style.strokeDasharray = `${arcLength} 339.29`;
         elements.ratingGaugeFill.style.strokeDashoffset = offset;
     }
 }
@@ -521,6 +525,42 @@ async function openEditor(session) {
     // Load statblocks
     const statblocks = await getStatBlocksBySession(session.session_id);
     state.editingStatBlocks = statblocks;
+
+    // Ensure all 3 default games exist
+    const defaultGames = ['01', 'CRICKET', 'COUNTUP'];
+    const existingTypes = state.editingStatBlocks.map(b => b.game_type);
+
+    for (const gameType of defaultGames) {
+        if (!existingTypes.includes(gameType)) {
+            const preset = GAME_PRESETS[gameType];
+            const statblock = {
+                statblock_id: generateUUID(),
+                session_id: session.session_id,
+                type: 'PRESET',
+                game_type: gameType,
+                items: preset.items.map(item => ({
+                    key: item.key,
+                    label: item.label || item.key,
+                    value_type: item.value_type,
+                    value_number: null,
+                    value_text: null,
+                    value_bool: null,
+                    unit: item.unit,
+                    note: null
+                })),
+                attachments: []
+            };
+            state.editingStatBlocks.push(statblock);
+        }
+    }
+
+    // Sort blocks to keep 01, CRICKET, COUNTUP order
+    const gameOrder = { '01': 0, 'CRICKET': 1, 'COUNTUP': 2, 'OTHER': 3 };
+    state.editingStatBlocks.sort((a, b) => {
+        const orderA = gameOrder[a.game_type] ?? 99;
+        const orderB = gameOrder[b.game_type] ?? 99;
+        return orderA - orderB;
+    });
 
     // Update UI
     elements.editorDate.textContent = formatDate(session.date);
