@@ -56,7 +56,7 @@ function initDB() {
  * Generate UUID
  */
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
@@ -138,7 +138,7 @@ function getAllSessions() {
         const request = store.getAll();
 
         request.onsuccess = () => {
-            const sessions = request.result.sort((a, b) => 
+            const sessions = request.result.sort((a, b) =>
                 new Date(b.date) - new Date(a.date)
             );
             resolve(sessions);
@@ -376,7 +376,7 @@ const GAME_PRESETS = {
     },
     CRICKET: {
         name: 'CRICKET',
-        icon: '🦗',
+        icon: '🦋',
         items: [
             { key: 'Rating', value_type: 'NUMBER', unit: '' },
             { key: 'MPR', value_type: 'NUMBER', unit: '' },
