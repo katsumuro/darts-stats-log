@@ -29,7 +29,7 @@ const elements = {
     navBtns: document.querySelectorAll('.nav-btn'),
 
     // Dashboard (Home)
-    mainRating: document.getElementById('main-rating'),
+    mainRatingInput: document.getElementById('main-rating-input'),
     ratingRank: document.getElementById('rating-rank'),
     ratingGaugeFill: document.getElementById('rating-gauge-fill'),
     stat01: document.getElementById('stat-01'),
@@ -38,7 +38,6 @@ const elements = {
     dashboardChart: document.getElementById('dashboard-chart'),
     btnCreateSession: document.getElementById('btn-create-session'),
     todayBtnText: document.getElementById('today-btn-text'),
-    statTotalSessions: document.getElementById('stat-total-sessions'),
     statMonthSessions: document.getElementById('stat-month-sessions'),
     statStreak: document.getElementById('stat-streak'),
 
@@ -123,6 +122,22 @@ function setupEventListeners() {
     elements.navBtns.forEach(btn => {
         btn.addEventListener('click', () => navigateTo(btn.dataset.page));
     });
+
+    // Manual rating input
+    if (elements.mainRatingInput) {
+        elements.mainRatingInput.addEventListener('input', (e) => {
+            const rating = parseFloat(e.target.value);
+            if (!isNaN(rating) && rating >= 0 && rating <= 18) {
+                localStorage.setItem('manualRating', rating);
+                updateRatingGauge(rating);
+                elements.ratingRank.textContent = getRankFromRating(rating);
+            } else if (e.target.value === '') {
+                localStorage.removeItem('manualRating');
+                updateRatingGauge(0);
+                elements.ratingRank.textContent = '--';
+            }
+        });
+    }
 
     // Create session
     elements.btnCreateSession.addEventListener('click', createTodaySession);
@@ -303,16 +318,30 @@ async function loadHomePage() {
         elements.btnCreateSession.onclick = createTodaySession;
     }
 
-    // Calculate overall stats from recent sessions
-    const recentSessions = filterSessionsByPeriod(allSessions, 30);
-    let rating01Avg = null;
-    let cricketMPRAvg = null;
-    let countupScoreAvg = null;
+    // Load manual rating from localStorage
+    const savedRating = localStorage.getItem('manualRating');
+    if (savedRating && savedRating !== 'null' && savedRating !== '') {
+        const rating = parseFloat(savedRating);
+        if (!isNaN(rating)) {
+            if (elements.mainRatingInput) {
+                elements.mainRatingInput.value = rating.toFixed(2);
+            }
+            updateRatingGauge(rating);
+            elements.ratingRank.textContent = getRankFromRating(rating);
+        }
+    } else {
+        if (elements.mainRatingInput) {
+            elements.mainRatingInput.value = '';
+        }
+        updateRatingGauge(0);
+        elements.ratingRank.textContent = '--';
+    }
 
+    // Calculate game stats from recent sessions
+    const recentSessions = filterSessionsByPeriod(allSessions, 30);
     let rating01Values = [];
     let cricketMPRValues = [];
     let countupScoreValues = [];
-    let ratingHistory = [];
 
     for (const session of recentSessions) {
         const statblocks = await getStatBlocksBySession(session.session_id);
@@ -329,58 +358,34 @@ async function loadHomePage() {
                 if (avgVal) countupScoreValues.push(avgVal);
             }
         }
-
-        // Collect rating history for chart
-        const sessionRating01 = rating01Values.length > 0 ? rating01Values[rating01Values.length - 1] : null;
-        if (sessionRating01) {
-            ratingHistory.push({
-                date: session.date,
-                value: sessionRating01
-            });
-        }
     }
 
     // Calculate averages
-    if (rating01Values.length > 0) {
-        rating01Avg = rating01Values.reduce((a, b) => a + b, 0) / rating01Values.length;
-    }
-    if (cricketMPRValues.length > 0) {
-        cricketMPRAvg = cricketMPRValues.reduce((a, b) => a + b, 0) / cricketMPRValues.length;
-    }
-    if (countupScoreValues.length > 0) {
-        countupScoreAvg = countupScoreValues.reduce((a, b) => a + b, 0) / countupScoreValues.length;
-    }
-
-    // Calculate main rating (average of 01 rating)
-    const mainRating = rating01Avg;
-
-    // Update dashboard display
-    if (mainRating) {
-        elements.mainRating.textContent = mainRating.toFixed(2);
-        updateRatingGauge(mainRating);
-        elements.ratingRank.textContent = getRankFromRating(mainRating);
-    } else {
-        elements.mainRating.textContent = '--';
-        elements.ratingRank.textContent = '--';
-        updateRatingGauge(0);
-    }
+    const rating01Avg = rating01Values.length > 0
+        ? rating01Values.reduce((a, b) => a + b, 0) / rating01Values.length
+        : null;
+    const cricketMPRAvg = cricketMPRValues.length > 0
+        ? cricketMPRValues.reduce((a, b) => a + b, 0) / cricketMPRValues.length
+        : null;
+    const countupScoreAvg = countupScoreValues.length > 0
+        ? countupScoreValues.reduce((a, b) => a + b, 0) / countupScoreValues.length
+        : null;
 
     // Update game stats
     elements.stat01.textContent = rating01Avg ? rating01Avg.toFixed(2) : '--';
     elements.statCricket.textContent = cricketMPRAvg ? cricketMPRAvg.toFixed(2) : '--';
     elements.statCountup.textContent = countupScoreAvg ? countupScoreAvg.toFixed(0) : '--';
 
-    // Update quick stats
-    elements.statTotalSessions.textContent = allSessions.length;
-
+    // Update quick stats - count unique days this month
     const thisMonth = new Date().toISOString().slice(0, 7);
     const monthSessions = allSessions.filter(s => s.date.startsWith(thisMonth));
-    elements.statMonthSessions.textContent = monthSessions.length;
+    const uniqueDays = new Set(monthSessions.map(s => s.date));
+    elements.statMonthSessions.textContent = uniqueDays.size;
 
     elements.statStreak.textContent = calculateStreak(allSessions);
 
-    // Render dashboard chart
-    renderDashboardChart(ratingHistory.reverse());
+    // Render dashboard chart (placeholder for now)
+    renderDashboardChart([]);
 }
 
 function updateRatingGauge(rating) {
@@ -395,14 +400,15 @@ function updateRatingGauge(rating) {
 }
 
 function getRankFromRating(rating) {
-    if (rating >= 15) return 'SA';
-    if (rating >= 13) return 'AAA';
-    if (rating >= 11) return 'AA';
-    if (rating >= 9) return 'A';
-    if (rating >= 7) return 'BB';
-    if (rating >= 5) return 'B';
-    if (rating >= 3) return 'C';
-    return 'CC';
+    // Based on DARTSLIVE rating table
+    if (rating >= 16) return 'SA';
+    if (rating >= 14) return 'AA';
+    if (rating >= 10) return 'A';
+    if (rating >= 8) return 'BB';
+    if (rating >= 6) return 'B';
+    if (rating >= 4) return 'CC';
+    if (rating >= 2) return 'C';
+    return '--';
 }
 
 function renderDashboardChart(dataPoints) {
@@ -471,6 +477,30 @@ async function createTodaySession() {
         state.currentSession = session;
         state.editingStatBlocks = [];
         state.editingTags = [];
+
+        // Automatically add 3 default games
+        const defaultGames = ['01', 'CRICKET', 'COUNTUP'];
+        for (const gameType of defaultGames) {
+            const preset = GAME_PRESETS[gameType];
+            const statblock = {
+                statblock_id: generateUUID(),
+                session_id: session.session_id,
+                type: 'PRESET',
+                game_type: gameType,
+                items: preset.items.map(item => ({
+                    key: item.key,
+                    label: item.label || item.key,
+                    value_type: item.value_type,
+                    value_number: null,
+                    value_text: null,
+                    value_bool: null,
+                    unit: item.unit,
+                    note: null
+                })),
+                attachments: []
+            };
+            state.editingStatBlocks.push(statblock);
+        }
 
         showToast('セッションを作成しました', 'success');
         openEditor(session);
@@ -804,7 +834,21 @@ function renderChart(dataPoints) {
         state.analyticsChart.destroy();
     }
 
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    // Choose color based on selected metric
+    let chartColor;
+    switch (state.selectedMetric) {
+        case 'rating':
+            chartColor = '#ffaa00'; // 01 Games - Gold
+            break;
+        case 'mpr':
+            chartColor = '#00ffaa'; // Cricket - Green
+            break;
+        case 'countup':
+            chartColor = '#ff6688'; // Count-up - Pink
+            break;
+        default:
+            chartColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00ffff';
+    }
 
     state.analyticsChart = new Chart(ctx, {
         type: 'line',
@@ -813,12 +857,12 @@ function renderChart(dataPoints) {
             datasets: [{
                 label: elements.analyticsMetric.options[elements.analyticsMetric.selectedIndex].text,
                 data: dataPoints.map(d => d.value),
-                borderColor: accent,
-                backgroundColor: accent + '20',
+                borderColor: chartColor,
+                backgroundColor: chartColor + '20',
                 fill: true,
                 tension: 0.3,
                 pointRadius: 4,
-                pointBackgroundColor: accent
+                pointBackgroundColor: chartColor
             }]
         },
         options: {
