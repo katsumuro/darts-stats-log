@@ -479,6 +479,7 @@ function renderDashboardChart(dataPoints) {
                 },
                 y: {
                     display: true,
+                    beginAtZero: false,
                     grid: {
                         color: '#1a1a1a'
                     },
