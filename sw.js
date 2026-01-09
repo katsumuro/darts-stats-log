@@ -1,5 +1,5 @@
 // Service Worker for Darts Stats Log PWA
-const CACHE_NAME = 'darts-stats-v8';
+const CACHE_NAME = 'darts-stats-v9';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -25,19 +25,23 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// Activate event - clean old caches
+// Activate event - clean old caches and take control immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
+                    // Delete ALL old caches
                     if (cacheName !== CACHE_NAME) {
                         console.log('Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            console.log('Service Worker activated, taking control');
+            return self.clients.claim();
+        })
     );
 });
 
