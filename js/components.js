@@ -63,7 +63,7 @@ function renderStatBlock(statblock, index, editable = true) {
                     <span class="statblock-icon">${preset.icon}</span>
                     <span class="statblock-name">${preset.name}</span>
                 </div>
-                ${editable ? `
+                ${editable && !['01', 'CRICKET', 'COUNTUP'].includes(statblock.game_type) ? `
                     <button class="btn btn-ghost" onclick="removeStatBlock(${index})">🗑️</button>
                 ` : ''}
             </div>
