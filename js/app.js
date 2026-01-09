@@ -105,9 +105,6 @@ async function init() {
         // Setup event listeners
         setupEventListeners();
 
-        // Show today's date
-        updateTodayDate();
-
         // Load home page data
         await loadHomePage();
 
