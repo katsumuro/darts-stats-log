@@ -13,12 +13,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="DartsStats">
 
+    <!-- Canonical (iOS share / Add to Home Screen対策) -->
+    <link rel="canonical" href="https://katsumuro.github.io/darts-stats-log/">
+
     <!-- Icons -->
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Manifest (GitHub Pages project site配下を明示) -->
     <link rel="manifest" href="/darts-stats-log/manifest.json">
-
-
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,6 +29,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700&display=swap"
         rel="stylesheet">
+
     <link rel="stylesheet" href="css/index.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -33,8 +37,8 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registered'))
+                navigator.serviceWorker.register('/darts-stats-log/sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
                     .catch(err => console.log('Service Worker registration failed:', err));
             });
         }
