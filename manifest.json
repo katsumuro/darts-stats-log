@@ -2,7 +2,7 @@
     "name": "Darts Stats Log",
     "short_name": "DartsStats",
     "description": "DARTSLIVE成績記録・分析アプリ",
-    "start_url": "./index.html",
+    "start_url": "./",
     "scope": "./",
     "display": "standalone",
     "background_color": "#0a0a0a",
