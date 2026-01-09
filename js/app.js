@@ -123,18 +123,46 @@ function setupEventListeners() {
         btn.addEventListener('click', () => navigateTo(btn.dataset.page));
     });
 
-    // Manual rating input
+    // Manual rating input with history
     if (elements.mainRatingInput) {
-        elements.mainRatingInput.addEventListener('input', (e) => {
+        elements.mainRatingInput.addEventListener('change', (e) => {
             const rating = parseFloat(e.target.value);
             if (!isNaN(rating) && rating >= 0 && rating <= 18) {
                 localStorage.setItem('manualRating', rating);
                 updateRatingGauge(rating);
                 elements.ratingRank.textContent = getRankFromRating(rating);
+
+                // Save to rating history
+                const today = getTodayDate();
+                let ratingHistory = JSON.parse(localStorage.getItem('ratingHistory') || '[]');
+
+                // Update or add today's rating
+                const existingIndex = ratingHistory.findIndex(h => h.date === today);
+                if (existingIndex >= 0) {
+                    ratingHistory[existingIndex].value = rating;
+                } else {
+                    ratingHistory.push({ date: today, value: rating });
+                }
+
+                // Keep only last 90 days
+                ratingHistory = ratingHistory.slice(-90);
+                localStorage.setItem('ratingHistory', JSON.stringify(ratingHistory));
+
+                // Refresh dashboard chart
+                loadHomePage();
             } else if (e.target.value === '') {
                 localStorage.removeItem('manualRating');
                 updateRatingGauge(0);
                 elements.ratingRank.textContent = '--';
+            }
+        });
+
+        // Also update gauge on input (live feedback)
+        elements.mainRatingInput.addEventListener('input', (e) => {
+            const rating = parseFloat(e.target.value);
+            if (!isNaN(rating) && rating >= 0 && rating <= 18) {
+                updateRatingGauge(rating);
+                elements.ratingRank.textContent = getRankFromRating(rating);
             }
         });
     }
@@ -397,8 +425,17 @@ async function loadHomePage() {
 
     elements.statStreak.textContent = calculateStreak(allSessions);
 
-    // Render dashboard chart with rating history
-    renderDashboardChart(ratingHistory.reverse());
+    // Load manual rating history from localStorage for dashboard chart
+    const manualRatingHistory = JSON.parse(localStorage.getItem('ratingHistory') || '[]');
+
+    // Filter to last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
+    const recentRatingHistory = manualRatingHistory.filter(h => h.date >= thirtyDaysAgoStr);
+
+    // Render dashboard chart with manual rating history
+    renderDashboardChart(recentRatingHistory);
 }
 
 function updateRatingGauge(rating) {
@@ -837,38 +874,53 @@ async function updateAnalytics() {
         : filterSessionsByPeriod(allSessions, state.selectedPeriod);
 
     // Collect data based on selected metric
-    const dataPoints = [];
+    let dataPoints = [];
 
-    for (const session of sessions.reverse()) {
-        const statblocks = await getStatBlocksBySession(session.session_id);
+    // DARTSLIVEレーティングはlocalStorageから取得
+    if (state.selectedMetric === 'dartslive') {
+        const ratingHistory = JSON.parse(localStorage.getItem('ratingHistory') || '[]');
 
-        for (const block of statblocks) {
-            let value = null;
+        // Filter by period
+        if (state.selectedPeriod !== 'all') {
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - state.selectedPeriod);
+            const daysAgoStr = daysAgo.toISOString().slice(0, 10);
+            dataPoints = ratingHistory.filter(h => h.date >= daysAgoStr);
+        } else {
+            dataPoints = [...ratingHistory];
+        }
+    } else {
+        // 他のメトリクスはセッションから取得
+        for (const session of sessions.reverse()) {
+            const statblocks = await getStatBlocksBySession(session.session_id);
 
-            switch (state.selectedMetric) {
-                case 'stats':
-                case 'rating':
-                    if (block.game_type === '01') {
-                        value = getStatValue(block.items, 'Rating_avg');
-                    }
-                    break;
-                case 'countup':
-                    if (block.game_type === 'COUNTUP') {
-                        value = getStatValue(block.items, 'Score_avg');
-                    }
-                    break;
-                case 'mpr':
-                    if (block.game_type === 'CRICKET') {
-                        value = getStatValue(block.items, 'MPR_avg');
-                    }
-                    break;
-            }
+            for (const block of statblocks) {
+                let value = null;
 
-            if (value !== null) {
-                dataPoints.push({
-                    date: session.date,
-                    value: value
-                });
+                switch (state.selectedMetric) {
+                    case 'rating01':
+                        if (block.game_type === '01') {
+                            value = getStatValue(block.items, 'Rating_avg');
+                        }
+                        break;
+                    case 'countup':
+                        if (block.game_type === 'COUNTUP') {
+                            value = getStatValue(block.items, 'Score_avg');
+                        }
+                        break;
+                    case 'mpr':
+                        if (block.game_type === 'CRICKET') {
+                            value = getStatValue(block.items, 'MPR_avg');
+                        }
+                        break;
+                }
+
+                if (value !== null) {
+                    dataPoints.push({
+                        date: session.date,
+                        value: value
+                    });
+                }
             }
         }
     }
