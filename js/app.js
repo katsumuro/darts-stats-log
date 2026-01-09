@@ -846,14 +846,15 @@ async function updateAnalytics() {
             let value = null;
 
             switch (state.selectedMetric) {
-                case 'countup':
-                    if (block.game_type === 'COUNTUP') {
-                        value = getStatValue(block.items, 'Score_avg');
-                    }
-                    break;
+                case 'stats':
                 case 'rating':
                     if (block.game_type === '01') {
                         value = getStatValue(block.items, 'Rating_avg');
+                    }
+                    break;
+                case 'countup':
+                    if (block.game_type === 'COUNTUP') {
+                        value = getStatValue(block.items, 'Score_avg');
                     }
                     break;
                 case 'mpr':
