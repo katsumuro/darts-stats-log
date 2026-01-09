@@ -1,16 +1,16 @@
 // Service Worker for Darts Stats Log PWA
-const CACHE_NAME = 'darts-stats-v1';
+const CACHE_NAME = 'darts-stats-v2';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/css/index.css',
-    '/js/db.js',
-    '/js/utils.js',
-    '/js/components.js',
-    '/js/app.js',
-    '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    './',
+    './index.html',
+    './css/index.css',
+    './js/db.js',
+    './js/utils.js',
+    './js/components.js',
+    './js/app.js',
+    './manifest.json',
+    './icons/icon-192.png',
+    './icons/icon-512.png'
 ];
 
 // Install event - cache assets
